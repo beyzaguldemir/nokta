@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **program.md** — Complete spec (source of truth) with all 12 sections filled per Karpathy's autoresearch pattern
 - **mobile-skeleton.md** — Template structure for spec sections with TODO placeholders
-- **README.md** — Public-facing overview explaining 3 contribution paths (A: edit mobile.md sections, B: add specs/*.md, C: implement code)
+- **README.md** — Public-facing overview explaining 3 contribution paths (A: edit program.md sections, B: add specs/*.md, C: implement code)
 - **specs/TEMPLATE.md** — Feature spec template with 5 required sections (IDENTITY, NON-GOALS, DATA CONTRACTS, OBJECTIVE FUNCTION, RATCHET RULE)
 - **checklists/** — Spec scoring rubrics:
   - `section_XX.yml` (12 files) — Checklist for each program.md section
@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `--spec-file specs/X.md` — Score a feature spec file
   - `--ci-comment` — Generate CI-formatted markdown output
 - **.github/workflows/md-ratchet.yml** — CI workflow for Path A (program.md section edits):
-  - Triggers on changes to `mobile.md` (currently aliased to program.md)
+  - Triggers on changes to `program.md` (currently aliased to program.md)
   - Scores changed sections against main baseline
   - Auto-merges if score ≥ main, rejects if score < main
   - Posts sticky PR comment with score breakdown

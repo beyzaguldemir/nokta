@@ -1,7 +1,7 @@
 name: "Nokta Spec Ratchet"
 
 # Triggered only when files inside specs/ change.
-# mobile.md changes are handled by md-ratchet.yml — these are independent.
+# program.md changes are handled by md-ratchet.yml — these are independent.
 
 on:
   pull_request:

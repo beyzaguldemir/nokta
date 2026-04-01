@@ -1,4 +1,4 @@
-# mobile.md — Nokta v0.1
+# program.md — Nokta v0.1
 
 > Karpathy-style instruction file for building Nokta mobile app.
 > This file IS the product spec. The CI ratchet enforces it. Humans write this, agents build from it.

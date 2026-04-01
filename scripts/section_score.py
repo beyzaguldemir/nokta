@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-section_score.py — Nokta mobile.md Ratchet Scorer
+section_score.py — Nokta program.md Ratchet Scorer
 
-Reads checklist YAMLs and scores the corresponding section in mobile.md,
+Reads checklist YAMLs and scores the corresponding section in program.md,
 or scores an entire specs/*.md file against checklists/spec_generic.yml.
 Used by CI to auto-merge or reject PRs.
 
@@ -52,7 +52,7 @@ def load_spec_checklist() -> dict:
 
 
 def extract_section(md_content: str, section_pattern: str) -> str:
-    """Extract content of a specific section from mobile.md."""
+    """Extract content of a specific section from program.md."""
     # Find section start
     start_match = re.search(re.escape(section_pattern), md_content)
     if not start_match:
@@ -226,7 +226,7 @@ def format_report(result: dict) -> str:
 
 def format_ci_comment(results: list, main_scores: dict = None) -> str:
     """Format results as a GitHub PR comment."""
-    lines = ["# 🎯 Nokta mobile.md Ratchet Score\n"]
+    lines = ["# 🎯 Nokta program.md Ratchet Score\n"]
 
     any_regression = False
 
@@ -255,7 +255,7 @@ def format_ci_comment(results: list, main_scores: dict = None) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Score Nokta mobile.md sections or specs/*.md files")
+    parser = argparse.ArgumentParser(description="Score Nokta program.md sections or specs/*.md files")
     parser.add_argument("--section", type=int, help="Score a specific section (0-12)")
     parser.add_argument("--all", action="store_true", help="Score all sections")
     parser.add_argument(
@@ -266,8 +266,8 @@ def main():
     )
     parser.add_argument(
         "--md-file",
-        default="mobile.md",
-        help="Path to mobile.md (default: mobile.md)",
+        default="program.md",
+        help="Path to program.md (default: program.md)",
     )
     parser.add_argument(
         "--spec-file",
@@ -307,7 +307,7 @@ def main():
                 sys.exit(1)
         return
 
-    # --- mobile.md section mode ---
+    # --- program.md section mode ---
     if not os.path.exists(args.md_file):
         print(f"ERROR: {args.md_file} not found")
         sys.exit(1)

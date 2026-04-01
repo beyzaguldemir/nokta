@@ -1,4 +1,4 @@
-# mobile.md — Nokta v0.1
+# program.md — Nokta v0.1
 
 > Karpathy-style instruction file for building Nokta mobile app.
 > This file IS the product spec. Humans write this, agents build from it.
@@ -100,7 +100,7 @@ nokta/
 │       └── llm.ts                # LLM abstraction (mock/live switch)
 ├── scripts/                      # CI scoring scripts
 ├── checklists/                   # Section scoring YAMLs
-├── mobile.md                     # This file
+├── program.md                     # This file
 ├── app.json
 ├── tsconfig.json
 └── package.json

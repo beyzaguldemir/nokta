@@ -356,7 +356,7 @@ Create a commit when:
 | File | Purpose | Contribution Path |
 |------|---------|-------------------|
 | `program.md` | Source of truth — complete spec | Path A (sections) |
-| `mobile-skeleton.md` | Template for mobile.md sections | Reference only |
+| `mobile-skeleton.md` | Template for program.md sections | Reference only |
 | `specs/TEMPLATE.md` | Template for feature specs | Copy for Path B |
 | `specs/*.md` | Feature spec files | Path B (new specs) |
 | `AGENT.md` | This file — AI agent instructions | Maintainer only |

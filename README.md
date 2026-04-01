@@ -1,10 +1,10 @@
-# Nokta — Community-Driven mobile.md
+# Nokta — Community-Driven program.md
 
 > 1 file, 0 human review. CI decides.
 
 ## What?
 
-`mobile.md` is the Karpathy-style spec file for the Nokta mobile app. This file serves as a complete specification from which AI agents (Claude Code / Codex) can build the application from scratch.
+`program.md` is the Karpathy-style spec file for the Nokta mobile app. This file serves as a complete specification from which AI agents (Claude Code / Codex) can build the application from scratch.
 
 **Humans write the spec, machines write the code.**
 
@@ -129,7 +129,7 @@ cd nokta
 # 2. Create a branch (choose your section number)
 git checkout -b section/04-data-contracts
 
-# 3. Open mobile.md, find your section, write it
+# 3. Open program.md, find your section, write it
 # Each section has <!-- COMMENT --> instructions inside
 
 # 4. Check your score (optional, local test)
@@ -137,7 +137,7 @@ pip install pyyaml
 python scripts/section_score.py --section 4
 
 # 5. Commit + push
-git add mobile.md
+git add program.md
 git commit -m "feat(section-04): add data contracts"
 git push origin section/04-data-contracts
 
@@ -230,7 +230,7 @@ git push origin spec/your-feature-name
 
 ## Rules
 
-1. **Only edit `mobile.md` (Path A) or add a new `specs/*.md` file (Path B).** Do not edit checklist YAMLs, CI workflows, or scripts — these are IMMUTABLE INFRA.
+1. **Only edit `program.md` (Path A) or add a new `specs/*.md` file (Path B).** Do not edit checklist YAMLs, CI workflows, or scripts — these are IMMUTABLE INFRA.
 2. **Section 1 (IDENTITY) is already complete.** Use it as a reference and follow its format.
 3. **Multiple people can write the same section.** The highest score gets merged.
 4. **Delete TODO placeholders.** As long as `> TODO:` lines remain, the section score stays low.
