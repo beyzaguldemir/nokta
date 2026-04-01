@@ -1,0 +1,25 @@
+section: 9
+title: "THE RATCHET LOOP"
+file_pattern: "## 9. THE RATCHET LOOP"
+min_words: 80
+checks:
+  - id: flow_diagram
+    description: "Loop akış diyagramı var"
+    pattern: "(→|->|↓|PR.*CI|push.*test.*merge)"
+    weight: 25
+  - id: never_drop
+    description: "Score asla düşemez kuralı belirtilmiş"
+    pattern: "(never.*drop|never.*decrease|asla.*düş|monoton|ratchet)"
+    weight: 25
+  - id: merge_queue
+    description: "Merge queue davranışı tanımlı"
+    pattern: "(queue|sıra|sequential|merge.*queue)"
+    weight: 20
+  - id: fail_message
+    description: "Fail mesaj formatı var"
+    pattern: "(message|mesaj|comment|output|Score.*need)"
+    weight: 15
+  - id: rerun
+    description: "Re-run mekanizması tanımlı"
+    pattern: "(re-run|rerun|push|tekrar|retry|again)"
+    weight: 15

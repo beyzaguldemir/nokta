@@ -1,0 +1,25 @@
+section: 11
+title: "ARCHITECTURAL INVARIANTS"
+file_pattern: "## 11. ARCHITECTURAL INVARIANTS"
+min_words: 60
+checks:
+  - id: state_management
+    description: "State management kuralı var"
+    pattern: "(state|Context|Redux|Zustand|useState)"
+    weight: 25
+  - id: component_boundaries
+    description: "Component sınırları tanımlı"
+    pattern: "(src/features|boundary|sınır|folder|klasör)"
+    weight: 20
+  - id: no_global_mutable
+    description: "Global mutable state yasağı belirtilmiş"
+    pattern: "(global|mutable|yasak|forbid|never|ban)"
+    weight: 20
+  - id: service_layer
+    description: "API/LLM çağrıları tek service katmanından geçmeli"
+    pattern: "(service|servis|layer|katman|api.*call)"
+    weight: 20
+  - id: naming_convention
+    description: "Dosya/klasör naming convention var"
+    pattern: "(naming|convention|camelCase|kebab|PascalCase)"
+    weight: 15

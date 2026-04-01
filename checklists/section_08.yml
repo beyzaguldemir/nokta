@@ -1,0 +1,25 @@
+section: 8
+title: "OBJECTIVE FUNCTION"
+file_pattern: "## 8. OBJECTIVE FUNCTION"
+min_words: 80
+checks:
+  - id: hard_gates
+    description: "Hard gate'ler listelenmiş"
+    pattern: "(gate|lint|typecheck|type.*check|bundle)"
+    weight: 20
+  - id: fail_reject
+    description: "Gate fail = instant reject kuralı belirtilmiş"
+    pattern: "(fail|reject|instant|block|red)"
+    weight: 15
+  - id: scalar_metric
+    description: "Tek skaler metrik tanımlı"
+    pattern: "(score|metric|metrik|pass.*count|pass.*rate)"
+    weight: 25
+  - id: formula
+    description: "Metrik hesaplama formülü var"
+    pattern: "(=|formula|calculate|hesapla)"
+    weight: 15
+  - id: merge_rule
+    description: "Merge kuralı tek cümleyle ifade edilmiş"
+    pattern: "(merge|≥|>=|greater|büyük|accept)"
+    weight: 25

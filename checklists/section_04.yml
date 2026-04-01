@@ -1,0 +1,29 @@
+section: 4
+title: "DATA CONTRACTS"
+file_pattern: "## 4. DATA CONTRACTS"
+min_words: 80
+checks:
+  - id: idea_interface
+    description: "Idea interface tanımlı"
+    pattern: "(interface Idea|type Idea)"
+    weight: 20
+  - id: message_interface
+    description: "Message interface tanımlı"
+    pattern: "(interface Message|type Message)"
+    weight: 15
+  - id: spec_interface
+    description: "IdeaSpec interface tanımlı"
+    pattern: "(interface IdeaSpec|type IdeaSpec|interface Spec|type Spec)"
+    weight: 15
+  - id: maturity_enum
+    description: "MaturityStage enum tanımlı"
+    pattern: "(enum MaturityStage|MaturityStage|dot.*line.*paragraph.*page)"
+    weight: 20
+  - id: storage_schema
+    description: "AsyncStorage key schema belgelenmiş"
+    pattern: "(AsyncStorage|storage|@nokta)"
+    weight: 15
+  - id: typescript_blocks
+    description: "Tüm tipler TypeScript code block içinde"
+    pattern: "```(ts|typescript)"
+    weight: 15

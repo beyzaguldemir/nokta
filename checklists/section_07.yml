@@ -1,0 +1,30 @@
+section: 7
+title: "LLM CONTRACT"
+file_pattern: "## 7. LLM CONTRACT"
+min_words: 120
+checks:
+  - id: mock_format
+    description: "Mock LLM response formatı tanımlı (JSON)"
+    pattern: "```(json|JSON)"
+    weight: 15
+  - id: golden_transcripts
+    description: "En az 3 golden idea transcript var"
+    min_occurrences_pattern: "(transcript|example|örnek|Golden|Scenario)"
+    min_occurrences: 3
+    weight: 20
+  - id: prompt_template
+    description: "Prompt template var"
+    pattern: "(system prompt|template|You are|Sen bir)"
+    weight: 20
+  - id: mock_mode
+    description: "Mock modda API çağrısı yapılmadığı belirtilmiş"
+    pattern: "(mock|MOCK|mock.*mode|API.*call.*no|çağrı.*yap.*ma)"
+    weight: 15
+  - id: env_flag
+    description: "Runtime'da gerçek LLM'e geçiş stratejisi var"
+    pattern: "(env|ENV|USE_MOCK|LIVE|environment|flag)"
+    weight: 15
+  - id: rate_limit
+    description: "Rate limit / fallback davranışı tanımlı"
+    pattern: "(rate.*limit|fallback|timeout|retry|hata)"
+    weight: 15

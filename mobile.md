@@ -1,0 +1,637 @@
+# mobile.md — Nokta v0.1
+
+> Karpathy-style instruction file for building Nokta mobile app.
+> This file IS the product spec. Humans write this, agents build from it.
+> Inspired by: github.com/karpathy/autoresearch
+
+---
+
+## 0. IMMUTABLE INFRA
+
+The following files are the backbone of the project. Contributors MUST NOT modify them. CI enforces this.
+
+- `.github/workflows/` — CI pipeline. Modifying this breaks the ratchet. Only maintainer can edit.
+- `scripts/section_score.py` — The scoring engine. Changing this would let PRs game the metric.
+- `checklists/*.yml` — Scoring rubrics. These define truth. Only maintainer edits.
+- `app.json` — Expo app identity. Changing this breaks builds for everyone.
+- `tsconfig.json` — TypeScript strictness settings. Loosening these defeats type safety.
+- `babel.config.js` — Transpilation config. Touching this causes phantom build errors.
+- `.eslintrc.js` — Lint rules. These are hard gates in CI; changing them bypasses quality control.
+- `package.json` — Only maintainer may add/remove dependencies. Contributors propose via issue.
+
+**Why:** Karpathy's pattern works because infrastructure is fixed and only the editable surface changes. These files are the fixed infrastructure. Everything else is the editable surface.
+
+---
+
+## 1. IDENTITY
+
+Nokta is a mobile app that captures idea sparks as small as a single word and matures them into structured product specs through guided questioning. It is not a chatbot, not a note-taking app, not a general-purpose AI assistant. It is an idea incubator.
+
+The user starts with a dot — a single word, a fragment, a hunch. The system asks targeted questions. The dot becomes a line (a title), then a paragraph (a problem statement), then a page (a full spec with audience, solution, metrics, and effort estimate). The metaphor is cosmological: a singularity expands into a universe.
+
+Target user: anyone with ideas but no structured process to mature them — founders, students, researchers, product managers.
+
+Nokta is NOT:
+- A general chatbot (conversations are structured interrogations, not open-ended)
+- A note-taking app (the system actively challenges and shapes your input)
+- A project management tool (it ends at spec, not at execution)
+- A code generator (it produces specs, not software — the agent layer comes later)
+
+---
+
+## 2. SETUP PROTOCOL
+
+**Target: Running app + passing tests in under 5 minutes.**
+
+### Prerequisites
+
+- Node.js >= 18.x, npm >= 9.x
+- Expo CLI: `npm install -g expo-cli` (or use npx)
+- Git configured with GitHub access
+- Physical device with Expo Go OR Android emulator / iOS simulator
+
+### Init
+
+```bash
+npx create-expo-app nokta --template blank-typescript
+cd nokta
+```
+
+### Install Dependencies
+
+Only these dependencies are permitted for v0.1. Adding new ones requires a maintainer-approved issue.
+
+```bash
+# Core
+npx expo install expo-router expo-constants expo-linking expo-status-bar
+
+# Storage
+npx expo install @react-native-async-storage/async-storage
+
+# Dev/Test
+npm install --save-dev jest @testing-library/react-native @types/jest typescript
+```
+
+### Folder Structure
+
+```
+nokta/
+├── app/                          # Expo Router screens
+│   ├── _layout.tsx               # Root layout with navigation
+│   ├── index.tsx                 # Screen 1: Idea List (Home)
+│   ├── idea/
+│   │   ├── [id].tsx              # Screen 2: Idea Chat (Refinement)
+│   │   └── spec/[id].tsx         # Screen 3: Idea Spec Card
+├── src/
+│   ├── features/
+│   │   └── idea/
+│   │       ├── components/       # UI components for idea feature
+│   │       ├── services/         # LLM service, storage service
+│   │       ├── hooks/            # Custom hooks (useIdea, useChat)
+│   │       ├── types.ts          # TypeScript interfaces (source of truth)
+│   │       └── __tests__/        # Co-located tests
+│   ├── config/
+│   │   ├── screens.json          # UI config (lightweight backend-driven UI)
+│   │   └── features.ts           # Feature flags
+│   ├── mock/
+│   │   ├── llm-responses.json    # Mock LLM transcripts for testing
+│   │   └── golden-ideas.json     # Golden test fixtures
+│   └── services/
+│       └── llm.ts                # LLM abstraction (mock/live switch)
+├── scripts/                      # CI scoring scripts
+├── checklists/                   # Section scoring YAMLs
+├── mobile.md                     # This file
+├── app.json
+├── tsconfig.json
+└── package.json
+```
+
+### Verify Setup
+
+```bash
+npm test                    # Jest tests pass
+npx expo start              # App launches without crash
+npx tsc --noEmit            # TypeScript compiles clean
+npx eslint . --ext .ts,.tsx # Lint passes
+```
+
+All four commands must pass before any PR is opened.
+
+---
+
+## 3. NON-GOALS
+
+These are explicitly out of scope for v0.1. Building any of these will result in PR rejection.
+
+- **Backend server** — No Express, no NestJS, no Supabase server. All data is local (AsyncStorage). Reason: reduces infrastructure complexity to zero; students focus on product logic.
+- **Authentication / login** — No user accounts, no OAuth, no JWT. The app is single-user, local-first. Reason: auth adds 2+ weeks of work and is irrelevant to the core idea-maturation flow.
+- **App Store / Play Store publish** — No EAS Build, no signing, no store listing. APK is for demo only. Reason: store submission is a distraction from product iteration.
+- **Real-time collaboration** — No multiplayer, no shared ideas, no WebSocket. Reason: single-user MVP must work perfectly before multi-user.
+- **Payment / monetization** — No in-app purchases, no subscriptions, no ads. Reason: premature monetization kills MVP focus.
+- **Analytics / telemetry** — No Mixpanel, no Amplitude, no crash reporting. Reason: adds dependency weight and privacy concerns for zero v0.1 value.
+- **Offline-first sync** — Data lives in AsyncStorage, period. No conflict resolution, no delta sync. Reason: sync is a hard distributed systems problem — defer to v0.2+.
+- **Internationalization (i18n)** — English only for v0.1. Turkish can be added in v0.2. Reason: i18n adds string management overhead that slows iteration.
+
+---
+
+## 4. DATA CONTRACTS
+
+These TypeScript interfaces are the single source of truth. All components, services, and tests reference these types. They live in `src/features/idea/types.ts`.
+
+```typescript
+// === MATURITY STAGES ===
+
+export enum MaturityStage {
+  DOT = "dot",
+  LINE = "line",
+  PARAGRAPH = "paragraph",
+  PAGE = "page",
+}
+
+// === CORE ENTITIES ===
+
+export interface Idea {
+  id: string;
+  title: string;
+  spark: string;
+  maturity: MaturityStage;
+  messages: Message[];
+  spec: IdeaSpec | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+  turnNumber: number;
+}
+
+export interface IdeaSpec {
+  problem: string;
+  audience: string;
+  solution: string;
+  successMetrics: string;
+  effortEstimate: string;
+  uniqueness: string;
+}
+
+// === MATURITY TRANSITION RULES ===
+
+export interface MaturityRule {
+  from: MaturityStage;
+  to: MaturityStage;
+  requiredFields: (keyof IdeaSpec)[];
+  minTurns: number;
+}
+
+export const MATURITY_RULES: MaturityRule[] = [
+  { from: MaturityStage.DOT, to: MaturityStage.LINE, requiredFields: [], minTurns: 1 },
+  { from: MaturityStage.LINE, to: MaturityStage.PARAGRAPH, requiredFields: ["problem", "audience"], minTurns: 3 },
+  { from: MaturityStage.PARAGRAPH, to: MaturityStage.PAGE, requiredFields: ["problem", "audience", "solution", "successMetrics", "effortEstimate", "uniqueness"], minTurns: 5 },
+];
+
+// === STORAGE SCHEMA ===
+// AsyncStorage keys: @nokta/ideas → string[] (ID list), @nokta/idea/<uuid> → Idea JSON
+// All reads/writes go through src/features/idea/services/storage.ts
+// Direct AsyncStorage access from components is FORBIDDEN.
+```
+
+---
+
+## 5. SCREEN & FEATURE SPEC
+
+### User Journey (canonical)
+
+```
+Open app → See idea list (empty state on first launch)
+  → Tap FAB (+) → Enter spark ("drone ile kargo teslimatı")
+  → System creates DOT → Navigate to Idea Chat
+  → LLM asks: "Bu fikir hangi sorunu çözüyor?"
+  → User answers → Maturity: DOT → LINE
+  → LLM asks: "Bu sorunu en çok kim yaşıyor?"
+  → User answers → LLM asks more → Maturity: LINE → PARAGRAPH
+  → Continue until PARAGRAPH → PAGE
+  → Navigate to Spec Card → See structured spec
+  → Return to list → See updated maturity indicator
+```
+
+### Screen 1: Idea List (Home) — `app/index.tsx`
+
+The home screen shows all ideas as cards in a vertical list.
+
+Components: `IdeaCard` (title, spark preview, maturity badge, timestamp), `MaturityBadge` (● ━ ¶ 📄, color-coded gray→yellow→blue→green), `EmptyState` ("Bir nokta ile başla." + pulsing dot animation), `FAB` (bottom-right, opens bottom sheet with TextInput).
+
+Behavior: List sorted by updatedAt desc. Tap card → navigate to chat. Long-press → delete confirmation. FAB → bottom sheet → type spark → send → create DOT idea → auto-navigate to chat.
+
+Acceptance Criteria:
+- GIVEN no ideas WHEN app opens THEN empty state shown with FAB visible
+- GIVEN 5 ideas WHEN app opens THEN all 5 cards visible, sorted by updatedAt desc
+- GIVEN user taps FAB and types "drone teslimat" WHEN user presses send THEN new DOT idea created and chat opens
+- GIVEN user long-presses idea WHEN delete confirmed THEN idea removed from list and storage
+
+### Screen 2: Idea Chat (Refinement) — `app/idea/[id].tsx`
+
+SMS-style chat where the system guides refinement.
+
+Components: `ChatBubble` (user=right/blue, assistant=left/gray), `MessageInput` (TextInput + send, disabled while loading), `MaturityProgress` (top bar, dot→line→paragraph→page), `SpecPreviewButton` (appears at PARAGRAPH+).
+
+Behavior: First load with empty messages → system sends first question. Each user message → system responds with next question. Maturity transitions automatically per MATURITY_RULES. Transition announced: "Fikriniz artık bir çizgi! 🎉". Messages persisted to AsyncStorage after each turn. Auto-scroll to bottom.
+
+Acceptance Criteria:
+- GIVEN new DOT idea WHEN chat opens THEN system's first message visible
+- GIVEN 3 answered questions WHEN maturity rules met THEN maturity transitions automatically
+- GIVEN maturity PARAGRAPH WHEN user views chat THEN SpecPreviewButton visible
+- GIVEN user closes/reopens chat WHEN messages existed THEN all messages restored
+
+### Screen 3: Idea Spec Card — `app/idea/spec/[id].tsx`
+
+Read-only structured spec view.
+
+Components: `SpecField` (labeled field: Problem, Audience, Solution, Success Metrics, Effort, Uniqueness), `MaturityBadge`, `SparkOrigin` ("Başlangıç noktanız: [spark]"), `ShareButton` (copy to clipboard as markdown).
+
+Behavior: All IdeaSpec fields displayed. Empty fields show "Henüz belirlenmedi" muted. Spec updates live from chat. Share copies formatted markdown to clipboard.
+
+Acceptance Criteria:
+- GIVEN PAGE maturity WHEN spec opens THEN all 6 fields populated
+- GIVEN LINE maturity WHEN spec opens THEN available fields show, rest show placeholder
+- GIVEN user taps share WHEN spec exists THEN formatted text copied with success toast
+
+---
+
+## 6. UI CONFIG
+
+Nokta uses a lightweight local config system. This is NOT a remote server — it is a local `config/screens.json` that controls screen layout. The app shell reads this to render components.
+
+### Config Schema
+
+```json
+{
+  "version": "0.1.0",
+  "screens": {
+    "home": {
+      "components": [
+        { "type": "IdeaList", "props": { "sortBy": "updatedAt", "sortOrder": "desc", "showMaturityBadge": true, "maxPreviewLength": 50 } },
+        { "type": "FAB", "props": { "position": "bottom-right", "icon": "plus" } },
+        { "type": "EmptyState", "props": { "message": "Bir nokta ile başla.", "showAnimation": true } }
+      ]
+    },
+    "chat": {
+      "components": [
+        { "type": "MaturityProgress", "props": { "position": "top" } },
+        { "type": "ChatBubble", "props": { "userColor": "#007AFF", "assistantColor": "#E5E5EA" } },
+        { "type": "MessageInput", "props": { "placeholder": "Fikrinizi geliştirin...", "disableWhileLoading": true } }
+      ]
+    },
+    "specCard": {
+      "components": [
+        { "type": "SparkOrigin", "props": { "highlighted": true } },
+        { "type": "SpecField", "props": { "fields": ["problem", "audience", "solution", "successMetrics", "effortEstimate", "uniqueness"], "emptyText": "Henüz belirlenmedi" } },
+        { "type": "ShareButton", "props": { "format": "markdown" } }
+      ]
+    }
+  }
+}
+```
+
+### Component Mapping
+
+```typescript
+// src/config/component-map.ts
+const COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
+  IdeaList: IdeaListComponent,
+  FAB: FABComponent,
+  EmptyState: EmptyStateComponent,
+  MaturityProgress: MaturityProgressComponent,
+  ChatBubble: ChatBubbleComponent,
+  MessageInput: MessageInputComponent,
+  SparkOrigin: SparkOriginComponent,
+  SpecField: SpecFieldComponent,
+  ShareButton: ShareButtonComponent,
+};
+```
+
+### Feature Flags
+
+```typescript
+// src/config/features.ts
+export const FEATURES = {
+  MOCK_LLM: true,
+  SHOW_MATURITY_ANIMATION: true,
+  ENABLE_DELETE: true,
+  ENABLE_SHARE: true,
+  MAX_IDEAS: 50,
+  LLM_TIMEOUT_MS: 10000,
+} as const;
+```
+
+**Note:** Full remote config (fetching screens.json from server) is deferred to v0.2.
+
+---
+
+## 7. LLM CONTRACT
+
+The LLM asks structured refinement questions. In CI/testing: MOCK mode. In production: real API.
+
+### Mock Mode (Default)
+
+When `FEATURES.MOCK_LLM` is `true`, returns deterministic responses. No API calls.
+
+```typescript
+// src/services/llm.ts
+export async function getNextQuestion(idea: Idea, messages: Message[]): Promise<string> {
+  if (FEATURES.MOCK_LLM) return getMockResponse(idea.maturity, messages.length);
+  return callLiveAPI(idea, messages);
+}
+```
+
+### Mock Response Map
+
+```json
+{
+  "dot_turn_0": "İlginç bir kıvılcım! Bu fikir hangi gerçek dünya sorununu çözüyor? Kim bu sorunla karşılaşıyor?",
+  "dot_turn_2": "Anladım. Bu sorunu en çok kim yaşıyor? Hedef kitlenizi tanımlayabilir misiniz?",
+  "line_turn_4": "Hedef kitle net. Şimdi çözümünüzü somutlaştıralım — bu sorunu TAM olarak nasıl çözeceksiniz?",
+  "line_turn_6": "Çözüm şekilleniyor. Başarıyı nasıl ölçersiniz? Hangi metrikler fikrinizin işe yaradığını kanıtlar?",
+  "paragraph_turn_8": "Güzel metrikler. Bu fikri benzerlerinden ayıran temel fark ne?",
+  "paragraph_turn_10": "Fikriniz artık tam bir spec! Efor tahmini yapabilir misiniz? (S/M/L/XL)",
+  "fallback": "Bu konuyu biraz daha açabilir misiniz? Daha fazla detay fikrinizi olgunlaştırmamıza yardımcı olacak."
+}
+```
+
+### Golden Transcripts
+
+**Transcript 1: "Drone Kargo"**
+```
+User: drone ile kargo teslimatı
+Assistant: İlginç bir kıvılcım! Bu fikir hangi gerçek dünya sorununu çözüyor?
+User: Son mil teslimat çok pahalı, özellikle kırsal bölgelerde
+Assistant: Bu sorunu en çok kim yaşıyor?
+User: Kırsal bölgedeki e-ticaret müşterileri ve küçük lojistik firmaları
+Assistant: Çözümünüzü somutlaştıralım — nasıl çözeceksiniz?
+User: Otonom drone filosu, merkez depolardan 5kg altı paketler, 30dk teslimat
+Assistant: Başarıyı nasıl ölçersiniz?
+User: Teslimat başına maliyet %60 düşüş, ortalama teslimat 30dk altı
+Assistant: Bu fikri benzerlerinden ayıran ne?
+User: Mevcut drone şirketleri şehir içi, biz kırsal optimizasyonu yapıyoruz
+Assistant: Efor tahmini?
+User: XL
+→ MaturityStage.PAGE
+```
+
+**Transcript 2: "Öğrenci Bütçe App"**
+```
+User: öğrenci bütçe takip
+Assistant: Bu fikir hangi sorunu çözüyor?
+User: Öğrenciler ay sonunda parasız kalıyor
+Assistant: Bu sorunu en çok kim yaşıyor?
+User: 18-25 yaş üniversite öğrencileri, KYK bursluları
+Assistant: Çözümünüzü somutlaştıralım.
+User: SMS bazlı mikro-hatırlatmalar + haftalık bütçe raporu
+Assistant: Başarıyı nasıl ölçersiniz?
+User: Kullanıcıların %70'i ay sonunda bütçenin %10'undan fazlasını koruyor
+Assistant: Benzerlerinden farkı?
+User: Mevcut uygulamalar karmaşık, bu SMS kadar basit
+Assistant: Efor tahmini?
+User: S
+→ MaturityStage.PAGE
+```
+
+**Transcript 3: "Akademik İntihal Dedektörü"**
+```
+User: yapay zeka ile akademik intihal tespiti
+Assistant: Bu fikir hangi sorunu çözüyor?
+User: Mevcut intihal yazılımları AI-üretilmiş metni yakalayamıyor
+Assistant: Bu sorunu en çok kim yaşıyor?
+User: Üniversite hocaları ve dergi editörleri
+Assistant: Çözümünüzü somutlaştıralım.
+User: Stilometrik analiz + LLM fingerprinting ile hibrit algılama
+Assistant: Başarıyı nasıl ölçersiniz?
+User: %95+ doğruluk, %5 altı false positive
+Assistant: Benzerlerinden farkı?
+User: Turnitin metin eşleşmesi yapıyor, biz yazım stili analizi ekliyoruz
+Assistant: Efor tahmini?
+User: L
+→ MaturityStage.PAGE
+```
+
+### Prompt Template (Live Mode)
+
+```
+You are Nokta, an idea maturation assistant. Ask ONE focused question at a time.
+
+Current maturity: {{maturity}}
+Populated fields: {{populated_fields}}
+Missing fields: {{missing_fields}}
+Turn: {{turn_number}}
+
+Rules:
+1. ONE question per response. Never multiple.
+2. Target the next missing spec field.
+3. Be specific. No vague "tell me more."
+4. When all fields populated, congratulate and summarize.
+5. Respond in user's language.
+6. Under 50 words.
+```
+
+### Rate Limit & Fallback
+- Timeout: 10s (`FEATURES.LLM_TIMEOUT_MS`)
+- On error: return fallback mock response
+- Max 20 LLM calls per idea per session
+- Exceeded: "Bugünlük yeterli iterasyon. Yarın devam edelim!"
+
+---
+
+## 8. OBJECTIVE FUNCTION
+
+### Hard Gates (Binary — fail any = instant reject)
+
+| Gate | Command | Pass Condition |
+|------|---------|----------------|
+| TypeScript | `npx tsc --noEmit` | Zero errors |
+| ESLint | `npx eslint . --ext .ts,.tsx` | Zero errors |
+| Bundle Size | `npx expo export --dump-sourcemap` | JS bundle < 2MB |
+| Dep Lock | `diff package.json` | No unauthorized new deps |
+
+### Scalar Metric: Golden Flow Pass Rate
+
+```
+metric = (passing_golden_flow_tests / total_golden_flow_tests) × 100
+```
+
+Golden flow tests (Jest + React Native Testing Library):
+1. **Create Idea** — FAB → enter spark → DOT idea created
+2. **Refinement** — Chat opens → system question → answer → maturity transitions
+3. **Spec View** — Spec card → populated fields match conversation
+4. **Persistence** — Create → close → reopen → data intact
+
+### Merge Rule
+
+**PR merges if: all hard gates pass AND golden_flow_pass_rate(PR) ≥ golden_flow_pass_rate(main).**
+
+---
+
+## 9. THE RATCHET LOOP
+
+```
+Push code → PR opened
+    ↓
+CI triggers
+    ↓
+Hard Gates: tsc → eslint → bundle → deps
+    ├── ANY FAIL → ❌ REJECT (stop)
+    └── ALL PASS ↓
+Golden Flow Tests
+    ├── pr_score = run tests on PR
+    ├── main_score = run tests on main
+    └── pr_score >= main_score?
+        ├── YES → ✅ ELIGIBLE
+        └── NO  → ❌ REJECT: "Score {pr}% < main {main}%"
+    ↓
+Auto-merge (squash)
+    ↓
+New baseline established
+```
+
+**Score never drops. This is the ratchet.**
+
+Merge queue: one PR at a time. After merge, remaining PRs re-run against new main.
+
+Fail message posted as PR comment with gate results + score comparison + action required.
+
+Every `git push` re-triggers CI. Fix → push → wait.
+
+---
+
+## 10. CONTRIBUTION PROTOCOL
+
+### Branch Naming
+```
+feature/<short-description>    # feature/idea-list-screen
+fix/<short-description>        # fix/maturity-transition-bug
+test/<short-description>       # test/golden-flow-persistence
+improve/<short-description>    # improve/mobile-md-section-7
+```
+
+### Commit Format (Conventional Commits)
+```
+feat(screen-home): add idea list with maturity badges
+test(golden-flow): add persistence flow test
+fix(service-llm): handle timeout in mock mode
+docs(mobile-md): improve LLM contract section
+```
+
+### PR Template
+
+```markdown
+## What Changed
+[Brief description]
+
+## Evidence (REQUIRED for code PRs)
+- [ ] 📸 Screenshot(s) of working feature
+- [ ] 🎥 YouTube short / screen recording (< 60 seconds)
+- [ ] 📦 APK download link (Google Drive / GitHub Release)
+- [ ] 📱 QR code for Expo Go (if applicable)
+
+## Checklist
+- [ ] All hard gates pass locally (tsc, eslint, bundle)
+- [ ] Golden flow tests pass locally
+- [ ] No new dependencies added
+- [ ] No immutable files modified
+- [ ] PR is ≤ 10 files, ≤ 500 lines changed
+```
+
+### Quarantine (Manual Review Required)
+- `.github/workflows/` changes
+- `package.json` / `package-lock.json` changes
+- `app.json`, `tsconfig.json` changes
+- `scripts/`, `checklists/` changes
+- Any file containing API keys or secrets
+
+### Size Limits
+- Max 10 files changed per PR
+- Max 500 lines changed per PR
+- Exceeding → auto-reject: "PR too large. Break into smaller PRs."
+
+---
+
+## 11. ARCHITECTURAL INVARIANTS
+
+### State Management
+- **Zustand** only. All global state in `src/features/idea/store.ts`
+- Components access via hooks (`useIdeaStore`)
+- Direct AsyncStorage from components is FORBIDDEN
+
+### Component Boundaries
+- Idea components: `src/features/idea/components/`
+- Screen files (`app/`): thin wrappers, no business logic
+- Shared UI: `src/components/ui/`
+
+### Service Layer
+- LLM: `src/services/llm.ts` (single entry point)
+- Storage: `src/features/idea/services/storage.ts`
+- Components never call AsyncStorage or LLM directly
+- Services are pure functions, no React hooks
+
+### Naming
+- Files: `kebab-case.ts` / `.tsx`
+- Components: `PascalCase`
+- Hooks: `useCamelCase`
+- Types: `PascalCase`
+- Constants: `UPPER_SNAKE_CASE`
+- Tests: `<name>.test.ts(x)`, co-located in `__tests__/`
+
+### Forbidden
+- No module-level `let`
+- No singletons with mutable state
+- No `window` / `global` assignments
+
+---
+
+## 12. TESTING PHILOSOPHY
+
+### Valid Test = Tests User Behavior
+"If I refactored internals but kept same UX, would this test pass?" Yes → valid. No → rewrite.
+
+### Anti-Patterns (AUTO-REJECT)
+- `expect(true).toBe(true)` — tests nothing
+- Snapshot spam on every component — breaks on every change
+- Mock everything — if you mock storage, LLM, navigation, AND the component, you're testing nothing
+- Duplicate tests with different variable names
+- Tests without assertions
+
+### Minimum Requirements
+- New component → at least 1 render test
+- New service function → at least 2 tests (happy + error)
+- Every maturity transition → covered by test
+- Every golden flow → integration test
+
+### Golden Flow Test Example
+
+```typescript
+test("user can create a new idea from spark", async () => {
+  render(<App />);
+  fireEvent.press(screen.getByTestId("fab-button"));
+  fireEvent.changeText(screen.getByTestId("spark-input"), "drone teslimat");
+  fireEvent.press(screen.getByTestId("spark-submit"));
+  expect(await screen.findByText("drone teslimat")).toBeTruthy();
+  expect(screen.getByTestId("maturity-badge-dot")).toBeTruthy();
+});
+```
+
+### Test Location
+Co-located: `src/features/idea/components/__tests__/IdeaCard.test.tsx`
+
+---
+
+## AUTONOMY MANDATE
+
+This file is the single source of truth. The CI is the judge. The ratchet never regresses.
+
+If you are an AI agent: follow the spec exactly. Do not add features not described here. Do not remove constraints. Do not modify immutable files. Make the golden flow tests pass. Make the metric go up.
+
+If you are a contributor: your job is the same. Improve the score. Ship evidence. The best version wins.
+
+> "The human might be asleep. The CI never sleeps." — adapted from Karpathy's autoresearch

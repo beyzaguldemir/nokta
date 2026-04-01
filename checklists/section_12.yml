@@ -1,0 +1,25 @@
+section: 12
+title: "TESTING PHILOSOPHY"
+file_pattern: "## 12. TESTING PHILOSOPHY"
+min_words: 80
+checks:
+  - id: valid_test_def
+    description: "Geçerli test tanımı var"
+    pattern: "(valid.*test|geçerli|behavior|davranış)"
+    weight: 20
+  - id: anti_patterns
+    description: "Anti-pattern listesi var"
+    pattern: "(anti.?pattern|snapshot.*spam|expect.*true|mock.*everything|YAPMA|DON'T)"
+    weight: 25
+  - id: min_test_per_feature
+    description: "Her yeni feature için minimum test sayısı belirtilmiş"
+    pattern: "(minimum|en az|at least|\\d+.*test)"
+    weight: 20
+  - id: golden_flows
+    description: "Golden flow testleri tanımlı"
+    pattern: "(golden|critical.*path|oluştur.*cevap|create.*answer)"
+    weight: 20
+  - id: test_location
+    description: "Test dosya lokasyonu kuralı var"
+    pattern: "(__tests__|co.?locate|test.*file|spec\\.)"
+    weight: 15

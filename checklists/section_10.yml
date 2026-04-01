@@ -1,0 +1,25 @@
+section: 10
+title: "CONTRIBUTION PROTOCOL"
+file_pattern: "## 10. CONTRIBUTION PROTOCOL"
+min_words: 80
+checks:
+  - id: branch_naming
+    description: "Branch naming convention var"
+    pattern: "(branch|dal|section/|feature/)"
+    weight: 20
+  - id: commit_format
+    description: "Commit message formatı var"
+    pattern: "(commit|conventional|feat:|fix:|chore:)"
+    weight: 20
+  - id: pr_template
+    description: "PR template tanımlı"
+    pattern: "(PR|pull.*request|template|şablon)"
+    weight: 20
+  - id: quarantine
+    description: "Quarantine kuralları var"
+    pattern: "(quarantine|karantina|manual.*review|CI.*config|dependency)"
+    weight: 25
+  - id: max_pr_size
+    description: "Max PR boyutu sınırı var"
+    pattern: "(max|limit|sınır|file.*change|line.*change)"
+    weight: 15

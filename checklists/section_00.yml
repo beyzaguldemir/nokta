@@ -1,0 +1,30 @@
+section: 0
+title: "IMMUTABLE INFRA"
+file_pattern: "## 0. IMMUTABLE INFRA"
+min_words: 50
+checks:
+  - id: ci_files_listed
+    description: "CI workflow dosyaları listelenmiş (.github/workflows/)"
+    pattern: "github/workflows"
+    weight: 20
+
+  - id: test_harness_listed
+    description: "Test harness dosyaları listelenmiş"
+    pattern: "(jest|test|__tests__|maestro)"
+    weight: 20
+
+  - id: config_files_listed
+    description: "Config dosyaları listelenmiş (app.json, tsconfig.json)"
+    pattern: "(app\\.json|tsconfig)"
+    weight: 20
+
+  - id: reasons_given
+    description: "Her dosya için 'neden dokunulamaz' açıklaması var"
+    min_lines_with_pattern: 3
+    pattern: "^[\\s]*[-*].*:.*"
+    weight: 20
+
+  - id: real_paths
+    description: "Dosya yolları gerçek repo yapısıyla tutarlı"
+    pattern: "(src/|\\./|\\.github/|config/)"
+    weight: 20

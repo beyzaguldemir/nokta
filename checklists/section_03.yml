@@ -1,0 +1,25 @@
+section: 3
+title: "NON-GOALS"
+file_pattern: "## 3. NON-GOALS"
+min_words: 60
+checks:
+  - id: min_five_items
+    description: "En az 5 non-goal listelenmiş"
+    min_list_items: 5
+    weight: 25
+  - id: reasons_given
+    description: "Her non-goal için açıklama var"
+    pattern: "(because|çünkü|reason|neden|—|:)"
+    weight: 25
+  - id: no_backend
+    description: "Backend server non-goal olarak belirtilmiş"
+    pattern: "(backend|server|API server)"
+    weight: 20
+  - id: no_auth
+    description: "Auth/login non-goal olarak belirtilmiş"
+    pattern: "(auth|login|sign.?in|register)"
+    weight: 15
+  - id: no_store
+    description: "App Store publish non-goal olarak belirtilmiş"
+    pattern: "(app.?store|publish|deploy|release)"
+    weight: 15

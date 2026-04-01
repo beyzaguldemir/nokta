@@ -1,0 +1,106 @@
+name: "Nokta MD Ratchet"
+
+on:
+  pull_request:
+    paths:
+      - "mobile.md"
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Checkout main branch scores
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-branch
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Score main branch (baseline)
+        id: main_score
+        run: |
+          cd main-branch
+          MAIN_SCORES=$(python scripts/section_score.py --all --md-file mobile.md 2>/dev/null | grep "TOTAL AVERAGE" | grep -oP '\d+' || echo "0")
+          echo "total=$MAIN_SCORES" >> $GITHUB_OUTPUT
+          # Score each section individually and save
+          for i in $(seq 0 12); do
+            SEC_SCORE=$(python scripts/section_score.py --section $i --md-file mobile.md 2>/dev/null | grep "Score:" | grep -oP '\d+' | head -1 || echo "0")
+            echo "section_${i}=${SEC_SCORE}" >> $GITHUB_OUTPUT
+          done
+
+      - name: Score PR branch
+        id: pr_score
+        run: |
+          PR_SCORES=$(python scripts/section_score.py --all --md-file mobile.md 2>/dev/null | grep "TOTAL AVERAGE" | grep -oP '\d+' || echo "0")
+          echo "total=$PR_SCORES" >> $GITHUB_OUTPUT
+          # Generate CI comment
+          python scripts/section_score.py --all --ci-comment --md-file mobile.md > /tmp/score_report.md
+          # Score each section individually
+          REGRESSION=false
+          for i in $(seq 0 12); do
+            SEC_SCORE=$(python scripts/section_score.py --section $i --md-file mobile.md 2>/dev/null | grep "Score:" | grep -oP '\d+' | head -1 || echo "0")
+            echo "section_${i}=${SEC_SCORE}" >> $GITHUB_OUTPUT
+          done
+
+      - name: Check for regressions
+        id: regression
+        run: |
+          REGRESSION=false
+          for i in $(seq 0 12); do
+            MAIN_VAL="${{ steps.main_score.outputs[format('section_{0}', i)] }}"
+            PR_VAL="${{ steps.pr_score.outputs[format('section_{0}', i)] }}"
+            MAIN_VAL=${MAIN_VAL:-0}
+            PR_VAL=${PR_VAL:-0}
+            if [ "$PR_VAL" -lt "$MAIN_VAL" ]; then
+              REGRESSION=true
+              echo "⚠️ Section $i regressed: $MAIN_VAL → $PR_VAL"
+            fi
+          done
+          echo "detected=$REGRESSION" >> $GITHUB_OUTPUT
+
+      - name: Post score comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: /tmp/score_report.md
+
+      - name: Gate decision
+        run: |
+          if [ "${{ steps.regression.outputs.detected }}" = "true" ]; then
+            echo "❌ REJECTED: Score regression detected."
+            echo "PR score: ${{ steps.pr_score.outputs.total }}"
+            echo "Main score: ${{ steps.main_score.outputs.total }}"
+            exit 1
+          else
+            echo "✅ PASSED: No regressions. Eligible for merge."
+            echo "PR score: ${{ steps.pr_score.outputs.total }}"
+            echo "Main score: ${{ steps.main_score.outputs.total }}"
+          fi
+
+  auto-merge:
+    needs: score
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Enable auto-merge
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: squash

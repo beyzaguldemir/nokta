@@ -1,0 +1,25 @@
+section: 1
+title: "IDENTITY"
+file_pattern: "## 1. IDENTITY"
+min_words: 50
+checks:
+  - id: mission_statement
+    description: "Tek paragraf misyon cümlesi var (max 50 kelime)"
+    pattern: "."
+    max_first_paragraph_words: 50
+    weight: 25
+
+  - id: target_user
+    description: "Hedef kullanıcı tanımlı"
+    pattern: "(user|kullanıcı|target|hedef|founder|student|researcher)"
+    weight: 25
+
+  - id: not_statement
+    description: "Nokta ne DEĞİLDİR cümlesi var"
+    pattern: "(NOT|değil|DEĞİL|is not)"
+    weight: 25
+
+  - id: metaphor
+    description: "Metafor açıklanmış (dot → line → paragraph → page)"
+    pattern: "(dot|line|paragraph|page|nokta|çizgi|paragraf|sayfa)"
+    weight: 25
