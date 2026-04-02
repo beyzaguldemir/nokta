@@ -1,6 +1,6 @@
 # NOKTA — NAIM's Orchestrated Knowledge-To-Artifact
 
-![NOKTA](nokta.png)
+![NOKTA](assets/nokta.jpeg)
 
 > The spec layer of the NAIM loop. NAIM builds. NOKTA thinks first.
 
