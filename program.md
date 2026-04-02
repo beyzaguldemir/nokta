@@ -10,14 +10,23 @@
 
 The following files are the backbone of the project. Contributors MUST NOT modify them. CI enforces this.
 
-- `.github/workflows/` — CI pipeline. Modifying this breaks the ratchet. Only maintainer can edit.
-- `scripts/section_score.py` — The scoring engine. Changing this would let PRs game the metric.
-- `checklists/*.yml` — Scoring rubrics. These define truth. Only maintainer edits.
-- `app.json` — Expo app identity. Changing this breaks builds for everyone.
-- `tsconfig.json` — TypeScript strictness settings. Loosening these defeats type safety.
-- `babel.config.js` — Transpilation config. Touching this causes phantom build errors.
-- `.eslintrc.js` — Lint rules. These are hard gates in CI; changing them bypasses quality control.
-- `package.json` — Only maintainer may add/remove dependencies. Contributors propose via issue.
+### CI / Pipeline Files
+- `.github/workflows/` — CI pipeline. Modifying this breaks the ratchet. Only maintainer can edit. **Why immutable:** Any change here could disable enforcement, allowing broken code to merge silently.
+
+### Scoring Engine & Rubrics
+- `scripts/section_score.py` — The scoring engine. Changing this would let PRs game the metric. **Why immutable:** If contributors can edit the scorer, scores become meaningless.
+- `checklists/*.yml` — Scoring rubrics. These define truth. Only maintainer edits. **Why immutable:** Rubrics are the contract between contributor and CI; changing them mid-flight invalidates past scores.
+
+### Test Harness Files
+- `jest.config.js` — Jest test runner configuration. Modifying this could suppress failing tests. **Why immutable:** A tampered test config could make all tests pass trivially.
+- `jest.setup.js` — Test environment setup (mocks, globals). **Why immutable:** Altering test setup could silently disable assertions across the entire suite.
+- `babel.config.js` — Transpilation config. Touching this causes phantom build errors. **Why immutable:** Babel config affects how tests are compiled; changes can hide or introduce false failures.
+
+### App Identity & Config Files
+- `app.json` — Expo app identity. Changing this breaks builds for everyone. **Why immutable:** App name, slug, and bundle ID are shared across all contributor environments.
+- `tsconfig.json` — TypeScript strictness settings. Loosening these defeats type safety. **Why immutable:** Relaxing strictness allows type errors to pass silently, undermining the TypeScript hard gate.
+- `.eslintrc.js` — Lint rules. These are hard gates in CI; changing them bypasses quality control. **Why immutable:** Disabling lint rules removes the objective code quality floor.
+- `package.json` — Only maintainer may add/remove dependencies. Contributors propose via issue. **Why immutable:** Unauthorized dependencies introduce security, license, and bundle-size risks.
 
 **Why:** Karpathy's pattern works because infrastructure is fixed and only the editable surface changes. These files are the fixed infrastructure. Everything else is the editable surface.
 
